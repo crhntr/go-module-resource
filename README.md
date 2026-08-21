@@ -4,16 +4,34 @@ A Concourse Resource to list Go module versions backed by the Go proxy.
 
 ## Source Configuration
 
-```json
-{
-  "proxy": "http://localhost:8080",
-  "module": "github.com/crhntr/neldermead"
-}
+Source configuration fields:
+- `proxy`: The Go module proxy (default https://proxy.golang.org).
+  The "direct" proxy value is not supported.
+- `module`: The Go module name that you want to fetch.
+
+### Example
+
+See ./ci/example.yml
+
+```yaml
+resource_types:
+  - name: go-module
+    type: registry-image
+    source:
+      repository: ghcr.io/crhntr/go-module-resource
+      tag: latest
+      username: your-username
+      password: ((your-github-pat))
+
+resources:
+  - name: dependency-mod
+    type: go-module
+    check_every: 24h
+    source:
+      module: golang.org/x/mod
+
+jobs: []
 ```
-
-The default value for "proxy" is https://proxy.golang.org.
-
-The "direct" proxy value is not supported.
 
 ## Behavior
 

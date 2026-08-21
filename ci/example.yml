@@ -1,0 +1,89 @@
+resource_types:
+  - name: go-module
+    type: registry-image
+    source:
+      repository: ghcr.io/crhntr/go-module-resource
+      tag: latest
+      username: crhntr
+      password: ((github-pat))
+
+resources:
+  - name: source
+    type: git
+    source:
+      uri: git@github.com:crhntr/txtarfmt.git
+      branch: main
+      private_key: ((ci_key))
+
+  - name: go-image
+    type: registry-image
+    icon: docker
+    source:
+      repository: golang
+      tag: 1.27
+
+  - name: dependency-mod
+    type: go-module
+    check_every: 24h
+    source:
+      module: golang.org/x/mod
+
+  - name: dependency-tools
+    type: go-module
+    check_every: 24h
+    source:
+      module: golang.org/x/tools
+
+jobs:
+  - name: bump-x-mod
+    plan:
+      - in_parallel:
+          fail_fast: true
+          steps:
+            - get: dependency
+              resource: dependency-mod
+              trigger: true
+            - get: go-image
+            - get: source
+      - task: go-get
+        image: go-image
+        config: &go-get-config
+          platform: linux
+          inputs:
+            - name: source
+            - name: dependency
+          run:
+            path: ../dependency/go-get.sh
+            dir: source
+      - task: go-test
+        image: go-image
+        config: &go-test-config
+          platform: linux
+          inputs:
+            - name: source
+          run:
+            path: /usr/bin/bash
+            dir: source
+            args:
+              - -c
+              - |
+                set -euxo pipefail
+                go mod download
+                go test ./...
+
+  - name: bump-x-tools
+    plan:
+      - in_parallel:
+          fail_fast: true
+          steps:
+            - get: dependency
+              resource: dependency-tools
+              trigger: true
+            - get: go-image
+            - get: source
+      - task: go-get
+        image: go-image
+        config: *go-get-config
+      - task: go-test
+        image: go-image
+        config: *go-test-config

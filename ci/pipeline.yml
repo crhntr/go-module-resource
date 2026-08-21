@@ -6,7 +6,7 @@ resources:
       branch: main
       private_key: ((ci_key))
       ignore_paths:
-        - pipeline.yml
+        - ci
         - README.md
 
   - name: resource-image
