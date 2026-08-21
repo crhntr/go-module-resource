@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+exec 3>&1
+exec 1>&2
+
+output_dir="${1:?usage: in <output-dir>}"
+payload=$(cat)
+
+version=$(printf '%s' "$payload" | jq -r '.version.version // ""')
+module_path=$(printf '%s' "$payload" | jq -r '.source.module // ""')
+source_proxy=$(printf '%s' "$payload" | jq -r '.source.proxy // ""')
+proxy="${source_proxy:-https://proxy.golang.org}"
+
+[ -n "$version" ] || { echo "version is required"; exit 1; }
+[ -n "$module_path" ] || { echo "source.module is required"; exit 1; }
+
+curl --silent --fail-with-body -o "${output_dir}/go.mod" -L "${proxy}/${module_path}/@v/${version}.mod"
+curl --silent --fail-with-body -o "${output_dir}/info.json" -L "${proxy}/${module_path}/@v/${version}.info"
+printf '%s\n' "$version" > "${output_dir}/version.txt"
+printf '#!/bin/sh\ngo get %s@%s\n' "$module_path" "$version" > "${output_dir}/go-get.sh"
+chmod +x "${output_dir}/go-get.sh"
+
+jq --arg v "$version" '{
+  version: {version: $v},
+  metadata: ([
+    {name: "time",    value: (.Time // "")},
+    {name: "vcs_url", value: (.Origin.URL // "")},
+    {name: "commit",  value: (.Origin.Hash // "")},
+    {name: "ref",     value: (.Origin.Ref // "")}
+  ] | map(select(.value != "")))
+}' "${output_dir}/info.json" >&3

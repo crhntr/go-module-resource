@@ -1,0 +1,54 @@
+resources:
+  - name: resource-src
+    type: git
+    source:
+      uri: git@github.com:crhntr/go-module-resource.git
+      branch: main
+      private_key: ((ci_key))
+
+  - name: resource-image
+    type: registry-image
+    source:
+      repository: ghcr.io/crhntr/go-module-resource
+      tag: latest
+      username: crhntr
+      password: ((github-pat))
+
+jobs:
+  - name: build-and-test
+    plan:
+      - get: resource-src
+        trigger: true
+      - task: build
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: {repository: concourse/oci-build-task}
+          inputs: [{name: resource-src}]
+          outputs: [{name: image}]
+          params: {CONTEXT: resource-src}
+          run: {path: build}
+      - task: test
+        image: image
+        config:
+          platform: linux
+          inputs: [{name: resource-src}]
+          run:
+            path: sh
+            args:
+              - -ec
+              - |
+                echo '{"source":{"module":"golang.org/x/mod"}}' \
+                  | /opt/resource/check | tee /tmp/versions.json
+                jq -e 'type == "array" and length > 0 and (.[0] | has("version"))' /tmp/versions.json
+
+                mkdir /tmp/out
+                version=$(jq -r '.[-1].version' /tmp/versions.json)
+                printf '{"source":{"module":"golang.org/x/mod"},"version":{"version":"%s"}}' "$version" \
+                  | /opt/resource/in /tmp/out | jq -e '.version.version == "'"$version"'"'
+                test -s /tmp/out/go.mod
+                test -s /tmp/out/version.txt
+      - put: resource-image
+        params: {image: image/image.tar}
