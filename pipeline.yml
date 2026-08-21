@@ -28,7 +28,7 @@ jobs:
             source: {repository: concourse/oci-build-task}
           inputs: [{name: resource-src}]
           outputs: [{name: image}]
-          params: {CONTEXT: resource-src}
+          params: {CONTEXT: resource-src, UNPACK_ROOTFS: true}
           run: {path: build}
       - task: test
         image: image
