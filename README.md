@@ -1,6 +1,8 @@
 # Go Module Resource
 
-A Concourse Resource to list Go module versions backed by the Go proxy.
+A custom [Concourse](https://concourse-ci.org) [Resource Type](https://concourse-ci.org/docs/resource-types/)
+to list [Go module](https://go.dev/ref/mod#go-mod-file-ident) versions backed by the
+[Go proxy](https://go.dev/ref/mod#module-proxy).
 
 ## Source Configuration
 
