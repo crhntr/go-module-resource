@@ -22,12 +22,6 @@ resources:
       repository: golang
       tag: 1.27
 
-  - name: dependency-mod
-    type: go-module
-    check_every: 24h
-    source:
-      module: golang.org/x/mod
-
   - name: dependency-tools
     type: go-module
     check_every: 24h
@@ -35,19 +29,19 @@ resources:
       module: golang.org/x/tools
 
 jobs:
-  - name: bump-x-mod
+  - name: bump-tools
     plan:
       - in_parallel:
           fail_fast: true
           steps:
             - get: dependency
-              resource: dependency-mod
+              resource: dependency-tools
               trigger: true
             - get: go-image
             - get: source
       - task: go-get
         image: go-image
-        config: &go-get-config
+        config:
           platform: linux
           inputs:
             - name: source
@@ -57,7 +51,7 @@ jobs:
             dir: source
       - task: go-test
         image: go-image
-        config: &go-test-config
+        config:
           platform: linux
           inputs:
             - name: source
@@ -70,20 +64,3 @@ jobs:
                 set -euxo pipefail
                 go mod download
                 go test ./...
-
-  - name: bump-x-tools
-    plan:
-      - in_parallel:
-          fail_fast: true
-          steps:
-            - get: dependency
-              resource: dependency-tools
-              trigger: true
-            - get: go-image
-            - get: source
-      - task: go-get
-        image: go-image
-        config: *go-get-config
-      - task: go-test
-        image: go-image
-        config: *go-test-config
