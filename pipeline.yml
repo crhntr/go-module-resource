@@ -5,6 +5,9 @@ resources:
       uri: git@github.com:crhntr/go-module-resource.git
       branch: main
       private_key: ((ci_key))
+      ignore_paths:
+        - pipeline.yml
+        - README.md
 
   - name: resource-image
     type: registry-image
