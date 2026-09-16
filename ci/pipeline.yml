@@ -17,11 +17,26 @@ resources:
       username: crhntr
       password: ((github-pat))
 
+  - name: go-image
+    type: registry-image
+    icon: docker
+    check_every: 24h
+    source:
+      repository: golang
+      tag: alpine
+      username: crhntr
+      password: ((docker-pat))
+
 jobs:
   - name: build-and-test
     plan:
-      - get: resource-src
-        trigger: true
+      - in_parallel:
+          fail_fast: true
+          steps:
+            - get: resource-src
+              trigger: true
+            - get: go-image
+              trigger: true
       - task: build
         privileged: true
         config:
