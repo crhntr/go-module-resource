@@ -20,9 +20,13 @@ printf '%s\n' "$version" > "${output_dir}/version.txt"
 printf '#!/bin/sh\ngo get %s@%s\n' "$module_path" "$version" > "${output_dir}/go-get.sh"
 chmod +x "${output_dir}/go-get.sh"
 
-jq --arg v "$version" '{
-  version: {version: $v},
+jq --arg version "${version}" \
+   --arg module_path "${module_path}" \
+   --arg proxy "${proxy}" '{
+  version: {version: $version},
   metadata: ([
+    {name: "module_path",  value: $module_path},
+    {name: "proxy",  value: $proxy},
     {name: "time",    value: (.Time // "")},
     {name: "vcs_url", value: (.Origin.URL // "")},
     {name: "commit",  value: (.Origin.Hash // "")},
